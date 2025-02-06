@@ -60,6 +60,598 @@ FROM        visits    c
 WHERE       visit_id NOT IN (SELECT visit_id FROM transactions)
 GROUP BY    1 ;
 
+197. Rising Temperature: https://leetcode.com/problems/rising-temperature/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      w.id
+FROM        weather     w
+JOIN        weather    w2
+ON          DATEDIFF(w.recorddate, w2.recorddate) = 1
+WHERE       w.temperature > w2.temperature ;
+
+1661. Average Time of Process per Machine: https://leetcode.com/problems/average-time-of-process-per-machine/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH start AS
+(
+SELECT      *
+FROM        activity
+WHERE       activity_type = 'start'
+)
+
+,end AS
+(
+SELECT      *
+FROM        activity
+WHERE       activity_type = 'end'
+)
+
+,final AS
+(
+SELECT      s.machine_id
+            ,COUNT(s.process_id) AS total_process
+            ,SUM(e.timestamp - s.timestamp) AS total_time
+FROM        start   s
+LEFT JOIN   end     e
+ON          s.machine_id   =    e.machine_id
+AND         s.process_id   =    e.process_id
+GROUP BY    1
+)
+
+SELECT      machine_id
+            ,ROUND((total_time/total_process),3) AS processing_time
+FROM        final
+ORDER BY    1 ;
+
+577. Employee Bonus: https://leetcode.com/problems/employee-bonus/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      name
+            ,bonus
+FROM        employee    e
+LEFT JOIN   bonus       b
+ON          e.empid     =   b.empid
+WHERE       b.bonus     <   1000
+OR          b.bonus     IS NULL ;
+
+
+1280. Students and Examinations: https://leetcode.com/problems/students-and-examinations/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      S.student_id
+            ,S.student_name
+            ,SU.subject_name
+            ,COUNT(E.student_id) attended_exams
+FROM        Students S
+CROSS JOIN  Subjects SU
+LEFT JOIN   Examinations E
+ON          S.student_id = E.student_id
+AND         SU.subject_name = E.subject_name
+GROUP BY    S.student_id, S.student_name, SU.subject_name
+ORDER BY    S.student_id, S.student_name, SU.subject_name ;
+
+570. Managers with at Least 5 Direct Reports: https://leetcode.com/problems/managers-with-at-least-5-direct-reports/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      name
+FROM        employee
+WHERE       id IN    (
+                            SELECT      a.managerid
+                            FROM        (
+                            SELECT      managerid
+                                        ,count(managerid) as cnt_mgr
+                            FROM        employee
+                            GROUP BY    1
+                            HAVING      cnt_mgr >=  5
+                                        ) a
+                            );
+
+1934. Confirmation Rate: https://leetcode.com/problems/confirmation-rate/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      s.user_id 
+            , ROUND(AVG(IF(c.action="confirmed",1,0)),2) AS confirmation_rate
+FROM        Signups s
+LEFT JOIN   Confirmations c
+ON          s.user_id = c.user_id
+GROUP BY    s.user_id;
+
+620. Not Boring Movies: https://leetcode.com/problems/not-boring-movies/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      id
+            ,movie
+            ,description
+            ,rating
+FROM        cinema
+WHERE       MOD(id,2)   =   1
+AND         description !=   'boring'
+ORDER BY    rating DESC;
+
+1251. Average Selling Price: https://leetcode.com/problems/average-selling-price/description/?envType=study-plan-v2&envId=top-sql-50
+
+
+SELECT      p.product_id
+            ,IFNULL(ROUND(SUM(units*price)/SUM(units),2),0) AS average_price
+FROM        Prices p
+LEFT JOIN   UnitsSold u
+ON          p.product_id = u.product_id 
+AND         u.purchase_date BETWEEN start_date AND end_date
+GROUP BY    product_id
+
+1075. Project Employees I: https://leetcode.com/problems/project-employees-i/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      project_id
+            ,ROUND(AVG(experience_years),2) AS average_years
+FROM        project     p
+LEFT JOIN   employee    e
+ON          p.employee_id   =   e.employee_id
+GROUP BY    1
+ORDER BY    1 ;
+
+1633. Percentage of Users Attended a Contest: https://leetcode.com/problems/percentage-of-users-attended-a-contest/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      contest_id
+            ,ROUND((COUNT(user_id) / (SELECT COUNT(user_id) FROM users)) * 100, 2) AS percentage
+FROM        register
+GROUP BY    1
+ORDER BY    2 DESC, 1 ;
+
+1211. Queries Quality and Percentage: https://leetcode.com/problems/queries-quality-and-percentage/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      query_name
+            ,ROUND((SUM(rating/position)/COUNT(query_name)),2) AS quality
+            ,ROUND((SUM(IF(rating < 3, 1,0))/COUNT(query_name))*100,2) AS poor_query_percentage
+FROM        queries
+GROUP BY    1 ;
+
+1193. Monthly Transactions I:  https://leetcode.com/problems/monthly-transactions-i/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      LEFT(trans_date,7)  AS  month
+            ,country
+            ,COUNT(id)          AS  trans_count
+            ,SUM(IF(state='approved',1,0)) AS approved_count
+            ,SUM(amount)        AS  trans_total_amount
+            ,SUM(IF(state='approved',amount,0)) AS approved_total_amount
+FROM        transactions
+GROUP BY    1,2
+ORDER BY    1   
+
+1174. Immediate Food Delivery II: https://leetcode.com/problems/immediate-food-delivery-ii/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH first_orders AS
+(
+SELECT      customer_id
+            ,MIN(order_date)    AS  first_order
+FROM        delivery
+GROUP BY    1
+)
+
+,immediate AS
+(
+SELECT      SUM(IF(order_date = customer_pref_delivery_date ,1,0)) AS immediate_orders
+FROM        delivery
+WHERE       (customer_id,order_date) IN (SELECT customer_id,first_order FROM first_orders)
+)
+
+SELECT      ROUND((immediate_orders/(SELECT COUNT(customer_id) FROM first_orders))*100,2) AS immediate_percentage
+FROM        immediate
+
+
+550. Game Play Analysis IV: https://leetcode.com/problems/game-play-analysis-iv/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      ROUND(SUM(login)/COUNT(DISTINCT player_id), 2) AS fraction
+FROM        (
+            SELECT      player_id
+                        ,DATEDIFF(event_date, MIN(event_date) OVER(PARTITION BY player_id)) = 1 AS login
+            FROM        Activity
+            ) AS t
+
+2356. Number of Unique Subjects Taught by Each Teacher: https://leetcode.com/problems/number-of-unique-subjects-taught-by-each-teacher/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      teacher_id
+            ,COUNT(DISTINCT subject_id) AS cnt
+FROM        teacher
+GROUP BY    1
+ORDER BY    1;
+
+1141. User Activity for the Past 30 Days I: https://leetcode.com/problems/user-activity-for-the-past-30-days-i/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      activity_date AS day
+            ,COUNT(DISTINCT user_id) AS active_users
+FROM        Activity
+WHERE       (activity_date > "2019-06-27" 
+AND         activity_date <= "2019-07-27")
+GROUP BY    activity_date;   
+
+1070. Product Sales Analysis III: https://leetcode.com/problems/product-sales-analysis-iii/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      product_id
+            ,year AS first_year
+            ,quantity
+            ,price
+FROM        sales
+WHERE       (product_id, year) IN   (
+                                    SELECT      product_id
+                                                ,MIN(year) as year
+                                    FROM        sales
+                                    GROUP BY    1
+                                    )
+ORDER BY    1 ;
+
+596. Classes More Than 5 Students: https://leetcode.com/problems/classes-more-than-5-students/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      class
+FROM        (
+            SELECT      class
+                        ,COUNT(student) AS total
+            FROM        courses
+            GROUP BY    1
+            HAVING      COUNT(student) >=  5
+            ) a
+
+1729. Find Followers Count: https://leetcode.com/problems/find-followers-count/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      user_id
+            ,COUNT(follower_id) AS followers_count
+FROM        followers f
+GROUP BY    1
+ORDER BY    1 ;
+
+619. Biggest Single Number: https://leetcode.com/problems/biggest-single-number/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      MAX(num) AS num
+FROM        (
+SELECT      num
+            ,COUNT(num) AS cnum
+FROM        mynumbers 
+GROUP BY    num
+HAVING      COUNT(num) = 1
+            ) a
+
+1045. Customers Who Bought All Products: https://leetcode.com/problems/customers-who-bought-all-products/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      customer_id
+FROM        (
+            SELECT      customer_id
+                        ,GROUP_CONCAT(DISTINCT product_key ORDER BY product_key SEPARATOR ', ') AS products
+            FROM        customer
+            GROUP BY    1 
+            ) a
+WHERE       products  = (SELECT GROUP_CONCAT(DISTINCT product_key ORDER BY product_key SEPARATOR ', ') AS products 
+                        FROM product)
+
+1731. The Number of Employees Which Report to Each Employee: https://leetcode.com/problems/the-number-of-employees-which-report-to-each-employee/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH managers AS
+(
+SELECT      employee_id
+            ,name
+FROM        employees
+WHERE       employee_id IN (SELECT reports_to FROM employees)
+)
+
+SELECT      M.employee_id
+            ,M.name
+            ,COUNT(E.age) AS reports_count
+            ,ROUND(AVG(E.age),0) AS average_age
+FROM        managers    m
+LEFT JOIN   employees   e
+ON          m.employee_id   =   e.reports_to
+GROUP BY    1,2
+order by    1
+
+610. Triangle Judgement: https://leetcode.com/problems/triangle-judgement/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      x
+            ,y
+            ,z
+            ,CASE
+                WHEN x + y > z AND x + z > y AND y + z > x 
+                THEN 'Yes'
+                ELSE 'No'
+            END AS triangle
+FROM        triangle
+
+180. Consecutive Numbers: https://leetcode.com/problems/consecutive-numbers/?envType=study-plan-v2&envId=top-sql-50
+
+WITH cte AS
+(
+SELECT      id
+            ,num
+            ,LEAD(num,1) OVER (ORDER BY id) AS num_1
+            ,LEAD(num,2) OVER (ORDER BY id) AS num_2
+FROM        logs
+)
+
+SELECT      DISTINCT num AS ConsecutiveNums 
+FROM        cte
+WHERE       num     = num_1 
+AND         num_1   = num_2 ;
+
+
+1204. Last Person to Fit in the Bus: https://leetcode.com/problems/last-person-to-fit-in-the-bus/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      person_name
+FROM        (
+            SELECT      turn
+                        ,person_name
+                        ,SUM(weight) OVER (ORDER BY turn ASC) AS cum_weight
+            FROM        queue
+            ) a
+WHERE       cum_weight <= 1000
+ORDER BY    cum_weight DESC
+LIMIT       1 ;
+
+1907. Count Salary Categories: https://leetcode.com/problems/count-salary-categories/description/?envType=study-plan-v2&envId=top-sql-50
+WITH salary AS 
+(
+SELECT      'Low Salary'        AS category
+UNION
+SELECT      'Average Salary'    AS category
+UNION 
+SELECT      'High Salary'       AS category 
+)
+
+,accounts_2 AS
+(
+SELECT      account_id
+            ,CASE
+                WHEN    income < 20000
+                THEN    'Low Salary'
+                WHEN    income BETWEEN 20000 AND 50000
+                THEN    'Average Salary'
+                WHEN    income > 50000
+                THEN    'High Salary'
+            END AS category
+FROM        accounts
+)
+
+SELECT      a.category
+            ,COUNT(a.account_id) AS accounts_count
+FROM        (
+            SELECT      s.category
+                        ,a.account_id
+            FROM        salary  S
+            LEFT JOIN   accounts_2 a
+            ON          s.category = a.category 
+            ) a
+GROUP BY    1 ;
+
+1978. Employees Whose Manager Left the Company: https://leetcode.com/problems/employees-whose-manager-left-the-company/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      employee_id
+FROM        employees
+WHERE       salary < 30000
+AND         manager_id NOT IN   ( 
+                                SELECT      employee_id
+                                FROM        employees
+                                ) 
+ORDER BY    1 ;
+
+626. Exchange Seats: https://leetcode.com/problems/exchange-seats/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH cte AS
+(
+SELECT      s.id
+            ,s.student
+            ,t.total_student
+            ,MOD(id,2) AS remainder_id
+            ,MOD(total_student,2) AS remainder_total
+FROM        seat s
+LEFT JOIN   (
+            SELECT      COUNT(id) AS total_student
+            FROM        seat
+            ) t 
+ON          1 = 1 
+)
+
+SELECT      CASE
+                WHEN    (remainder_total = 1 AND remainder_id = 1 AND id = total_student) 
+                THEN    id
+                WHEN    (remainder_total = 1 AND remainder_id = 1)
+                THEN    id + 1
+                WHEN    (remainder_total = 1 AND remainder_id = 0)
+                THEN    id - 1
+                WHEN    (remainder_total = 0 AND remainder_id = 1)
+                THEN    id + 1
+                WHEN   (remainder_total = 0 AND remainder_id = 0)
+                THEN    id - 1
+            END AS id
+            ,student
+FROM        cte
+ORDER BY    1 ;
+
+1341. Movie Rating: https://leetcode.com/problems/movie-rating/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH ratings AS
+(
+SELECT      m.user_id
+            ,u.name
+            ,COUNT(m.user_id) AS no_of_ratings
+FROM        movierating     m
+LEFT JOIN   users           u
+ON          m.user_id   =   u.user_id
+GROUP BY    1
+ORDER BY    3 DESC ,  2 ASC
+LIMIT       1
+)
+     
+,avg_rating AS
+(
+SELECT      m.movie_id
+            ,m2.title
+            ,AVG(m.rating) AS avg_rating
+FROM        movierating     m
+LEFT JOIN   movies          m2
+ON          m.movie_id      =   m2.movie_id
+WHERE       LEFT(created_at,7) = '2020-02'
+GROUP BY    1 
+ORDER BY    3 DESC ,  2 ASC
+LIMIT       1
+)
+
+
+SELECT      name  AS  results
+FROM        ratings
+UNION ALL
+SELECT      title  AS  results
+FROM        avg_rating
+
+1321. Restaurant Growth: https://leetcode.com/problems/restaurant-growth/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH base AS
+(
+SELECT      visited_on
+            ,SUM(amount) AS total_amt
+FROM        customer
+GROUP BY    1
+)
+
+SELECT      visited_on
+            ,amount
+            ,average_amount
+FROM        (
+            SELECT      visited_on
+                        ,ROW_NUMBER() OVER (ORDER BY visited_on) AS row_num
+                        ,SUM(total_amt) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS amount
+                        ,ROUND(AVG(total_amt) OVER (ORDER BY visited_on ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),2) AS average_amount
+            FROM        base
+            ) a
+WHERE       row_num > 6
+
+602. Friend Requests II: Who Has the Most Friends: https://leetcode.com/problems/friend-requests-ii-who-has-the-most-friends/description/?envType=study-plan-v2&envId=top-sql-50
+
+WITH unionmerge AS
+(
+SELECT      requester_id AS id
+FROM        requestaccepted
+UNION ALL
+SELECT      accepter_id  AS id
+FROM        requestaccepted  
+)
+
+SELECT      id
+            ,COUNT(id) AS num
+FROM        unionmerge
+GROUP BY    1
+ORDER BY    2 DESC
+LIMIT       1 ;
+
+585. Investments in 2016: https://leetcode.com/problems/investments-in-2016/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT ROUND(SUM(tiv_2016),2) AS tiv_2016
+FROM Insurance
+WHERE tiv_2015 IN(
+    SELECT tiv_2015
+    FROM Insurance
+    GROUP BY tiv_2015
+    HAVING COUNT(*)>1
+)
+AND
+(lat,lon) IN (
+    SELECT lat,lon
+    FROM Insurance
+    GROUP BY lat,lon
+    HAVING COUNT(*)=1
+)
+
+185. Department Top Three Salaries: https://leetcode.com/problems/department-top-three-salaries/?envType=study-plan-v2&envId=top-sql-50
+
+WITH base AS
+(
+SELECT      id
+            ,name
+            ,salary
+            ,departmentid
+            ,DENSE_RANK() OVER (PARTITION BY departmentid ORDER BY salary DESC) AS salary_rnk
+FROM        employee
+)
+
+SELECT      d.name  AS department
+            ,b.name AS employee
+            ,salary
+FROM        base    b
+LEFT JOIN   department d
+ON          b.departmentid  =   d.id
+WHERE       salary_rnk      <=  3
+ORDER BY    1,3 DESC;
+
+1667. Fix Names in a Table: https://leetcode.com/problems/fix-names-in-a-table/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      user_id
+            ,CONCAT(UPPER(LEFT(name,1)) , LOWER(RIGHT(name, (LENGTH(name) - 1)))) AS name
+FROM        users
+ORDER BY    1 ;
+
+1527. Patients With a Condition: https://leetcode.com/problems/patients-with-a-condition/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      patient_id
+            ,patient_name
+            ,conditions   
+FROM        patients
+WHERE       conditions LIKE '% DIAB1%' OR conditions LIKE 'DIAB1%'
+ORDER BY    1 ;
+
+196. Delete Duplicate Emails: https://leetcode.com/problems/delete-duplicate-emails/description/?envType=study-plan-v2&envId=top-sql-50
+
+DELETE   
+FROM    person 
+WHERE   id IN           (SELECT      id      
+                        FROM        (
+                                    SELECT      id
+                                                ,email
+                                                ,RANK() OVER (PARTITION BY email ORDER BY id) AS rnk
+                                    FROM        person
+                                    ) a
+                        WHERE       rnk > 1   ) 
+
+176. Second Highest Salary: https://leetcode.com/problems/second-highest-salary/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      MAX(SALARY) AS SecondHighestSalary 
+FROM        EMPLOYEE 
+WHERE       SALARY <>   (SELECT    MAX(SALARY) 
+                        FROM EMPLOYEE
+                        );
+
+1484. Group Sold Products By The Date: https://leetcode.com/problems/group-sold-products-by-the-date/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      sell_date
+            ,COUNT(DISTINCT product) AS num_sold
+            ,GROUP_CONCAT(DISTINCT product ORDER BY product ASC SEPARATOR ',') AS products                    
+FROM        activities
+GROUP BY    1
+ORDER BY    1 ;
+
+1327. List the Products Ordered in a Period: https://leetcode.com/problems/list-the-products-ordered-in-a-period/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      product_name
+            ,SUM(unit) AS UNIT
+FROM        orders      o
+LEFT JOIN   products    p
+ON          o.product_id = p.product_id
+WHERE       LEFT(order_date,7) = '2020-02'
+GROUP BY    1
+HAVING      SUM(unit) >= 100
+ORDER BY    2;
+
+1517. Find Users With Valid E-Mails: https://leetcode.com/problems/find-users-with-valid-e-mails/description/?envType=study-plan-v2&envId=top-sql-50
+
+SELECT      user_id
+            ,name
+            ,mail
+FROM        users
+WHERE       mail REGEXP '^[A-Za-z][A-Za-z0-9_\.\-]*@leetcode(\\?com)?\\.com$';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
